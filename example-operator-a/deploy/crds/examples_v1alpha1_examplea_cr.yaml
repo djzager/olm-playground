@@ -1,0 +1,7 @@
+apiVersion: examples.io/v1alpha1
+kind: ExampleA
+metadata:
+  name: example-examplea
+spec:
+  # Add fields here
+  size: 3

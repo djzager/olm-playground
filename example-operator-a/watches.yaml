@@ -1,0 +1,5 @@
+---
+- version: v1alpha1
+  group: examples.io
+  kind: ExampleA
+  playbook: /opt/ansible/playbook.yml

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-operator-b
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: example-operator-b
+  template:
+    metadata:
+      labels:
+        name: example-operator-b
+    spec:
+      serviceAccountName: example-operator-b
+      containers:
+        - name: ansible
+          command:
+          - /usr/local/bin/ao-logs
+          - /tmp/ansible-operator/runner
+          - stdout
+          image: docker.io/djzager/example-operator-b:v1
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+          - mountPath: /tmp/ansible-operator/runner
+            name: runner
+            readOnly: true
+        - name: operator
+          # Replace this with the built image name
+          image: docker.io/djzager/example-operator-b:v1
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+          - mountPath: /tmp/ansible-operator/runner
+            name: runner
+          env:
+            - name: WATCH_NAMESPACE
+              value: ""
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "example-operator-b"
+      volumes:
+        - name: runner
+          emptyDir: {}

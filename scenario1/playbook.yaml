@@ -1,0 +1,64 @@
+---
+
+- hosts: localhost
+  vars:
+    state: present
+    namespace: scenario1
+  tasks:
+
+  - assert:
+      that: "v1 is defined"
+      fail_msg: Must define the v1 registry image to use
+
+  - assert:
+      that: "v2 is defined"
+      fail_msg: Must define the v2 registry image to use
+
+  - name: namespace state={{ state }}
+    k8s:
+      state: "{{ state }}"
+      definition:
+        kind: Namespace
+        metadata:
+          name: "{{ namespace }}"
+
+  - name: operatorgroup state={{ state }}
+    k8s:
+      state: "{{ state }}"
+      definition:
+        apiVersion: operators.coreos.com/v1alpha2
+        kind: OperatorGroup
+        metadata:
+         name: operatorgroup
+         namespace: "{{ namespace }}"
+
+  - name: Catalog Source state={{ state }}
+    k8s:
+      state: "{{ state }}"
+      definition:
+        apiVersion: operators.coreos.com/v1alpha1
+        kind: CatalogSource
+        metadata:
+          name: "{{ namespace }}-catalogsource"
+          namespace: openshift-operator-lifecycle-manager
+        spec:
+          sourceType: grpc
+          image: "{{ v1 }}"
+          displayName: Scenario 1 Catalog Source
+          publisher: Red Hat
+
+  - name: Subscribe to Operator A
+    k8s:
+      state: "{{ state }}"
+      definition:
+        apiVersion: operators.coreos.com/v1alpha1
+        kind: Subscription
+        metadata:
+          name: example-operator-a-subscription
+          namespace: "{{ namespace }}"
+        spec:
+          channel: alpha
+          name: example-operator-a
+          source: scenario1-catalogsource
+          sourceNamespace: openshift-operator-lifecycle-manager
+          startingCSV: example-operator-a.v0.0.1
