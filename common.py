@@ -5,7 +5,8 @@ from openshift.dynamic import DynamicClient, exceptions
 k8s_client = config.new_client_from_config()
 dyn_client = DynamicClient(k8s_client)
 
-# Create a namespace and return it's definition
+olm_namespace = 'openshift-operator-lifecycle-manager'
+
 def create_namespace(name):
     v1_namespaces = dyn_client.resources.get(
         api_version='v1',
@@ -24,6 +25,17 @@ def create_namespace(name):
     except exceptions.ConflictError:
         print("\tNamespace already exists")
     return v1_namespaces.get(name=name)
+
+def delete_namespace(name):
+    v1_namespaces = dyn_client.resources.get(
+        api_version='v1',
+        kind='Namespace'
+    )
+    try:
+        print('Deleting namespace')
+        v1_namespaces.delete(name=name)
+    except exceptions.NotFoundError:
+        print("\tNamespace already removed")
 
 def create_operator_group(name, namespace):
     v1alpha2_operator_groups = dyn_client.resources.get(
@@ -45,18 +57,28 @@ def create_operator_group(name, namespace):
         print("\tOperator Group already exists")
     return v1alpha2_operator_groups.get(name=name, namespace=namespace)
 
+def delete_operator_group(name, namespace):
+    v1alpha2_operator_groups = dyn_client.resources.get(
+        api_version='operators.coreos.com/v1alpha2',
+        kind='OperatorGroup'
+    )
+    try:
+        print('Deleting operator group')
+        v1alpha2_operator_groups.delete(name=name, namespace=namespace)
+    except exceptions.NotFoundError:
+        print("\tOperator Group already removed")
+
 def create_catalog_source(name, image, display_name):
     v1alpha1_catalog_sources = dyn_client.resources.get(
         api_version='operators.coreos.com/v1alpha1',
         kind='CatalogSource'
     )
-    namespace = 'openshift-operator-lifecycle-manager'
     catalog_source = {
         'apiVersion': 'operators.coreos.com/v1alpha1',
         'kind': 'CatalogSource',
         'metadata': {
             'name': name,
-            'namespace': namespace
+            'namespace': olm_namespace
         },
         'spec': {
             'sourceType': 'grpc',
@@ -70,51 +92,48 @@ def create_catalog_source(name, image, display_name):
         v1alpha1_catalog_sources.create(catalog_source)
     except exceptions.ConflictError:
         print("\tCatalog source already exists")
-    return v1alpha1_catalog_sources.get(name=name, namespace=namespace)
+    return v1alpha1_catalog_sources.get(name=name, namespace=olm_namespace)
 
-def patch_catalog_source(name, image, display_name):
+def patch_catalog_source(name, image):
     v1alpha1_catalog_sources = dyn_client.resources.get(
         api_version='operators.coreos.com/v1alpha1',
         kind='CatalogSource'
     )
-    namespace = 'openshift-operator-lifecycle-manager'
     catalog_source = {
         'apiVersion': 'operators.coreos.com/v1alpha1',
         'kind': 'CatalogSource',
         'metadata': {
             'name': name,
-            'namespace': namespace
+            'namespace': olm_namespace
         },
         'spec': {
-            'sourceType': 'grpc',
-            'image': image,
-            'displayName': display_name,
-            'publisher': 'Red Hat'
+            'image': image
         }
     }
     try:
         print('Patching catalog source')
         v1alpha1_catalog_sources.patch(
             body=catalog_source,
-            namespace=namespace,
+            namespace=olm_namespace,
             content_type='application/merge-patch+json'
         )
     except Exception as e:
         print('Something went wrong')
         raise(e)
+    return v1alpha1_catalog_sources.get(name=name, namespace=olm_namespace)
+
+def delete_catalog_source(name):
+    v1alpha1_catalog_sources = dyn_client.resources.get(
+        api_version='operators.coreos.com/v1alpha1',
+        kind='CatalogSource'
+    )
+    try:
+        print('Deleting catalog source')
+        v1alpha1_catalog_sources.delete(name=name, namespace=olm_namespace)
+    except exceptions.NotFoundError:
+        print("\tCatalog source already removed")
 
 def create_subscription(name, namespace, channel, catalog_source):
-    # apiVersion: operators.coreos.com/v1alpha1
-    # kind: Subscription
-    # metadata:
-    #     name: example-operator-a
-    #     namespace: scenario1
-    # spec:
-    #     channel: alpha
-    #     name: example-operator-a
-    #     source: scenario1-catalogsource
-    #     sourceNamespace: openshift-operator-lifecycle-manager
-    #     startingCSV: example-operator-a.v0.0.1
     v1alpha1_subscriptions = dyn_client.resources.get(
         api_version='operators.coreos.com/v1alpha1',
         kind='Subscription'
@@ -139,6 +158,17 @@ def create_subscription(name, namespace, channel, catalog_source):
     except exceptions.ConflictError:
         print("\tSubscription already exists")
     return v1alpha1_subscriptions.get(name=name, namespace=namespace)
+
+def delete_subscription(name, namespace):
+    v1alpha1_subscriptions = dyn_client.resources.get(
+        api_version='operators.coreos.com/v1alpha1',
+        kind='Subscription'
+    )
+    try:
+        print('Deleting subscription')
+        v1alpha1_subscriptions.delete(name=name, namespace=namespace)
+    except exceptions.NotFoundError:
+        print("\tSubscription already removed")
 
 def wait_ip_on_subscription(name, namespace):
     v1alpha1_subscriptions = dyn_client.resources.get(
