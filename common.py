@@ -120,7 +120,23 @@ def patch_catalog_source(name, image):
     except Exception as e:
         print('Something went wrong')
         raise(e)
+
+    # TODO: Workaround until https://github.com/operator-framework/operator-lifecycle-manager/pull/816
+    v1_pods = dyn_client.resources.get(
+        api_version='v1',
+        kind='Pod'
+    )
+    registry_pods = v1_pods.get(namespace=olm_namespace, label_selector='olm.catalogSource=' + name)
+    registry_pod_def = registry_pods['items'][0].to_dict()
+    registry_pod_def['spec']['containers'][0]['image'] = image
+    v1_pods.patch(
+        body=registry_pod_def,
+        namespace=olm_namespace,
+        content_type='application/merge-patch+json'
+    )
+
     return v1alpha1_catalog_sources.get(name=name, namespace=olm_namespace)
+
 
 def delete_catalog_source(name):
     v1alpha1_catalog_sources = dyn_client.resources.get(
@@ -176,13 +192,15 @@ def wait_ip_on_subscription(name, namespace):
         kind='Subscription'
     )
     print('Waiting for installplan')
+    start_time = time.time()
     while True:
         subscription = v1alpha1_subscriptions.get(
             name=name,
             namespace=namespace
         )
         if not subscription['status']:
-            print("\tNo status on subscription")
+            elapsed_time = time.time() - start_time
+            print("\tNo status on subscription - time elapsed: " + time.strftime("%H:%M:%S", elapsed_time))
             time.sleep(10)
             continue
         if 'installplan' in subscription['status'].keys():
