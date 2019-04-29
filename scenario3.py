@@ -12,7 +12,7 @@ operator_a_subscription = {
     'channel': 'stable',
     'catalog_source': name
 }
-v1image = 'docker.io/djzager/olm-playground-scenario3:v1-b'
+v1image = 'docker.io/djzager/olm-playground-scenario3:v1'
 
 def run():
     # Set scenario baseline:
