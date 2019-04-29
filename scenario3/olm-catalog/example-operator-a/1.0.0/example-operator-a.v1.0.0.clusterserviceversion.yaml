@@ -118,7 +118,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: example-operator-a
-                image: docker.io/djzager/example-operator-a:v1
+                image: docker.io/djzager/example-operator-a:v1stable
                 imagePullPolicy: IfNotPresent
                 name: operator
                 resources: {}

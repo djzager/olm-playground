@@ -126,8 +126,9 @@ def patch_catalog_source(name, image):
         api_version='v1',
         kind='Pod'
     )
-    registry_pods = v1_pods.get(namespace=olm_namespace, label_selector='olm.catalogSource=' + name)
-    registry_pod_def = registry_pods['items'][0].to_dict()
+    registry_pod_list = v1_pods.get(namespace=olm_namespace, label_selector='olm.catalogSource=' + name)
+    registry_pods = registry_pod_list.to_dict()
+    registry_pod_def = registry_pods['items'][0]
     registry_pod_def['spec']['containers'][0]['image'] = image
     v1_pods.patch(
         body=registry_pod_def,
@@ -149,6 +150,7 @@ def delete_catalog_source(name):
     except exceptions.NotFoundError:
         print("\tCatalog source already removed")
 
+# def create_subscription(name, namespace, channel, catalog_source, starting_csv=None):
 def create_subscription(name, namespace, channel, catalog_source):
     v1alpha1_subscriptions = dyn_client.resources.get(
         api_version='operators.coreos.com/v1alpha1',
@@ -168,6 +170,8 @@ def create_subscription(name, namespace, channel, catalog_source):
             'sourceNamespace': 'openshift-operator-lifecycle-manager'
         }
     }
+    # if starting_csv:
+    #     subscription['spec']['startingCSV'] = starting_csv
     try:
         print('Creating subscription')
         sub = v1alpha1_subscriptions.create(body=subscription)
@@ -200,13 +204,13 @@ def wait_ip_on_subscription(name, namespace):
         )
         if not subscription['status']:
             elapsed_time = time.time() - start_time
-            print("\tNo status on subscription - time elapsed: " + time.strftime("%H:%M:%S", elapsed_time))
-            time.sleep(10)
+            print("\tNo status on subscription - time elapsed: " + time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+            time.sleep(30)
             continue
         if 'installplan' in subscription['status'].keys():
             return subscription['status']['installplan']['name']
         print("\tNo installplan found on subscription")
-        time.sleep(10)
+        time.sleep(30)
 
 def wait_ip_complete(name, namespace):
     v1alpha1_install_plans = dyn_client.resources.get(

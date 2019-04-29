@@ -3,9 +3,9 @@
 import argparse
 import common
 
-name = 'scenario1'
+name = 'scenario2'
 operator_a_name = 'example-operator-a'
-operator_a_namespace = name + '-' + operator_a_name
+operator_a_namespace = name
 operator_a_subscription = {
     'name': operator_a_name,
     'namespace': operator_a_namespace,
