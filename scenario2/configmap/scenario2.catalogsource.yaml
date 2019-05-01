@@ -1,0 +1,11 @@
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: scenario2
+  namespace: openshift-operator-lifecycle-manager
+spec:
+  sourceType: internal
+  configMap: scenario2
+  displayName: Scenario 2 Operators
+  publisher: Red Hat
